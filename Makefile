@@ -1,9 +1,9 @@
 CC=g++
 CFLAGS=-c -Wall -O3 
 LDFLAGS =-lGL -lGLU -lglut
-SOURCES=as3.cpp BezPatch.cpp BezCurve.cpp
+SOURCES=as4.cpp Bone.cpp Kinematics.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=as3
+EXECUTABLE=as4
 
 RM = /bin/rm -f
 
