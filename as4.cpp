@@ -63,13 +63,26 @@ void initScene(){
 
 	object = glGenLists(1);
 
-	Kinematics test(1,1);
-	test.solveFK(bones,0, PI/4, -PI/4);
-	test.solveFK(bones,1, PI/4, 0);
+	Kinematics test(1,0.01);
+
+
+	test.solveFK(bones,0, PI/4, PI/2);
+	// std::cout<<test.solveFK(bones,1, 0, -PI/2)<<std::endl;
+	// std::cout<<test.solveFK(bones,2, PI/3, 0)<<std::endl;
+	// std::cout<<test.solveFK(bones,2, -PI/3, 0)<<std::endl;
+	// std::cout<<test.solveFK(bones,1, 0, PI/2)<<std::endl;
+	// std::cout<<test.jacobian(bones, 0.01);
+	test.solveIK(bones, Eigen::Vector3d(5, 5, 5));
+
 	glNewList(object, GL_COMPILE);
-	
+
 	glLineWidth(1);
 	glBegin(GL_LINES);
+
+	glColor3f(1, 1, 0);
+	glVertex3f(0,0,0);
+	glVertex3f(5,5,5);
+
 	glColor3f(1, 0, 0);
 	glVertex3f(0,0,0);
 	glVertex3f(100,0,0);
@@ -84,10 +97,10 @@ void initScene(){
 	glEnd();
 
 	glLineWidth(10);
-
+	glColor3f(0, 1, 1);
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(0,0,0);
-	for(int i=0; i<bones.size(); i++) {
+	for (int i=0; i<bones.size(); i++) {
 		glVertex3f(bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2]);
 	}
 	glEnd();

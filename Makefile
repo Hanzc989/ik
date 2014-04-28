@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -Wall -O3 
+CFLAGS=-c -O3 
 LDFLAGS =-lGL -lGLU -lglut
 SOURCES=as4.cpp Bone.cpp Kinematics.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
