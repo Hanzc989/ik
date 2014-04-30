@@ -25,7 +25,7 @@ int currColor=0;
 bool shading=0, wireframe=0;
 GLuint object;
 GLfloat lights[5][4]= {{0.2, 0.2, 0.2, 0.5}, {0.2, 0.0, 0.4, 0.5}, {0.0, 0.3, 0.3, 0.5}, {0.25, 0.25, 0.05, 0.5}, {0.0, 0.0, 0.2, 0.5}};
-std::vector<Bone> bones(3);
+std::vector<Bone> bones(4);
 
 
 //****************************************************
@@ -34,14 +34,13 @@ std::vector<Bone> bones(3);
 void myReshape(int w, int h) {
 	viewport.w = w;
 	viewport.h = h;
-
 	glViewport (0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(30, (GLfloat) w/(GLfloat) h, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0, 2, 0, 0, 0, 0, 0, 0, 1);
+	gluLookAt(10, 10, 10, 0, 0, 0, 0, 0, 1);
 }
 
 
@@ -63,25 +62,32 @@ void initScene(){
 
 	object = glGenLists(1);
 
-	Kinematics test(1,0.01);
+	Kinematics test(0.1,0.001);
 
+    std::cout<<test.solveFK(bones,0, 0.001, 0.001)<<std::endl<<std::endl;
 
-	test.solveFK(bones,0, PI/4, PI/2);
-	// std::cout<<test.solveFK(bones,1, 0, -PI/2)<<std::endl;
-	// std::cout<<test.solveFK(bones,2, PI/3, 0)<<std::endl;
-	// std::cout<<test.solveFK(bones,2, -PI/3, 0)<<std::endl;
-	// std::cout<<test.solveFK(bones,1, 0, PI/2)<<std::endl;
-	// std::cout<<test.jacobian(bones, 0.01);
-	test.solveIK(bones, Eigen::Vector3d(5, 5, 5));
+    for (int i=0; i<bones.size();i++){
+        std::cout << bones[i].currTheta << ", " << bones[i].currPhi << std::endl;
+    }
+
+     //std::cout<<test.solveFK(bones,1, PI/2, PI/2)<<std::endl<<std::endl;
+     
+     //std::cout<<test.solveFK(bones,0, -PI/2, -PI/2)<<std::endl<<std::endl;
+     //std::cout<<test.solveFK(bones,2, PI/3, 0)<<std::endl<<std::endl;
+     //std::cout<<test.solveFK(bones,2, -PI/3, 0)<<std::endl<<std::endl;
+     //std::cout<<test.solveFK(bones,1, 0, PI/2)<<std::endl<<std::endl;
+     std::cout<<test.jacobian(bones, 0.1)<<std::endl;
+    
+     test.solveIK(bones, Eigen::Vector3d(0, 2.6, 3.0));
 
 	glNewList(object, GL_COMPILE);
 
 	glLineWidth(1);
 	glBegin(GL_LINES);
 
-	glColor3f(1, 1, 0);
-	glVertex3f(0,0,0);
-	glVertex3f(5,5,5);
+    glColor3f(1, 1, 0);
+    glVertex3f(0,0,0);
+    glVertex3f(0,2.6,3.0);
 
 	glColor3f(1, 0, 0);
 	glVertex3f(0,0,0);
@@ -101,6 +107,11 @@ void initScene(){
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(0,0,0);
 	for (int i=0; i<bones.size(); i++) {
+        if (i%2!=0) {
+            glColor3f(0, 1, 1);
+        } else {
+            glColor3f(1, 0, 1);
+        }
 		glVertex3f(bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2]);
 	}
 	glEnd();
@@ -189,10 +200,10 @@ void arrows(int key, int x, int y)
 // the usual stuff, nothing exciting here
 //****************************************************
 int main(int argc, char *argv[]) {
-	bones[0]=Bone(2);
-	bones[1]=Bone(1.3f);
-	bones[2]=Bone(1);
-
+	bones[0]=Bone(2.0f);
+    bones[1]=Bone(1.3f);
+    bones[2]=Bone(1.7f);
+    bones[3]=Bone(1.0f);
 	//This initializes glut
 	glutInit(&argc, argv);
 

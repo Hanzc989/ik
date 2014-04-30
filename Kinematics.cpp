@@ -73,29 +73,43 @@ Eigen::MatrixXd Kinematics::jacobian(std::vector<Bone> & bones, float step) {
 }
 
 Eigen::MatrixXd Kinematics::pseudoInverse(Eigen::MatrixXd & jacobian) {
-	return (jacobian.transpose()*jacobian).inverse()*jacobian.transpose();
+	//return (jacobian.transpose()*jacobian).inverse()*jacobian.transpose();
+    std::cout << "j*j-t inverse" << std::endl;
+    std::cout << (jacobian*jacobian.transpose()) << std::endl;
+    return jacobian.transpose()*(jacobian*jacobian.transpose()).inverse();
 }
 
 void Kinematics::solveIK(std::vector<Bone> & bones, Eigen::Vector3d goalPos) {
 	float currStep = step;
 	Eigen::Vector3d oldPos = bones[bones.size()-1].currPos;
 
-	while ((oldPos-goalPos).norm() > epsilon && currStep > 0.001) {
+	while ((oldPos-goalPos).norm() > epsilon && currStep > 0.0001) {
 		//std::cout << "wah" << std::endl;
 		Eigen::MatrixXd j = jacobian(bones, currStep);
+        std::cout << j << std::endl;
 		Eigen::MatrixXd p = pseudoInverse(j);
-		Eigen::VectorXd angles = p*(goalPos-oldPos);
+        std::cout << p << std::endl;
+        //std::cout << goalPos << std::endl;
+        //std::cout << oldPos << std::endl;
+		Eigen::VectorXd angles = p*currStep*(goalPos-oldPos);
+        //angles = -1*angles;
 		Eigen::Vector3d newPos;
+        std::cout << angles << std::endl;
 		for (int i=0; i<angles.size(); i+=2) {
 			newPos = solveFK(bones, i/2, angles[i], angles[i+1]);
 		}
-		if ((newPos-goalPos).norm() > (oldPos-goalPos).norm()) {
+
+        //std::cout << (newPos-goalPos).norm() << std::endl;
+		if ((newPos-goalPos).norm() >= (oldPos-goalPos).norm()) {
 			for (int i=angles.size()-1; i>0; i-=2) {
 				solveFK(bones, i/2, -angles[i-1], -angles[i]);
 			}
 			currStep /= 2;
 		} else {
+            //std::cout << "yo" << std::endl;
 			oldPos = newPos;
 		}
+        std::cout << "currStep: "<<currStep << std::endl;
+        std::cout <<"dist: " << (oldPos-goalPos).norm() << std::endl;
 	}
 }
