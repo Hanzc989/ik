@@ -2,6 +2,7 @@
 #include "includes.h"
 #include "Bone.h"
 #include "Kinematics.h"
+#include "Cylinder.h"
 
 #define PI 3.14159265
 
@@ -24,7 +25,7 @@ Viewport viewport;
 int currColor=0;
 bool shading=0, wireframe=0;
 GLuint object;
-GLfloat lights[5][4]= {{0.2, 0.2, 0.2, 0.5}, {0.2, 0.0, 0.4, 0.5}, {0.0, 0.3, 0.3, 0.5}, {0.25, 0.25, 0.05, 0.5}, {0.0, 0.0, 0.2, 0.5}};
+GLfloat lights[5][4]= {{0.9, 0.9, 0.9, 0.8}, {0.4, 0.0, 0.8, 0.8}, {0.0, 0.6, 0.6, 0.8}, {0.5, 0.5, 0.1, 0.8}, {0.0, 0.0, 0.4, 0.8}};
 std::vector<Bone> bones(4);
 
 
@@ -50,21 +51,21 @@ void myReshape(int w, int h) {
 void initScene(){
 	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_LIGHTING);
-	
-	// glLightfv(GL_LIGHT0, GL_AMBIENT, lights[0]);
-	// glLightfv(GL_LIGHT0, GL_DIFFUSE, lights[0]);
-	// glLightfv(GL_LIGHT0, GL_SPECULAR, lights[0]);
-	// GLfloat pos[] = {2000,2000,2000};
-	// glLightfv(GL_LIGHT0, GL_POSITION, pos);
-	// glEnable(GL_LIGHT0);
-	// glShadeModel(GL_FLAT);
+    glEnable(GL_LIGHTING);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, lights[0]);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lights[0]);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, lights[0]);
+    GLfloat pos[] = {2000,2000,2000};
+    glLightfv(GL_LIGHT0, GL_POSITION, pos);
+    glEnable(GL_LIGHT0);
+    glShadeModel(GL_FLAT);
 
 	object = glGenLists(1);
 
 	Kinematics test(0.1,0.001);
 
-    std::cout<<test.solveFK(bones,0, 0.001, 0.001)<<std::endl<<std::endl;
+    std::cout<<test.solveFK(bones,0, 0.001, 0)<<std::endl<<std::endl;
 
     for (int i=0; i<bones.size();i++){
         std::cout << bones[i].currTheta << ", " << bones[i].currPhi << std::endl;
@@ -78,7 +79,7 @@ void initScene(){
      //std::cout<<test.solveFK(bones,1, 0, PI/2)<<std::endl<<std::endl;
      std::cout<<test.jacobian(bones, 0.1)<<std::endl;
     
-     test.solveIK(bones, Eigen::Vector3d(0, 2.6, 3.0));
+     test.solveIK(bones, Eigen::Vector3d(0, 4, 2.0));
 
 	glNewList(object, GL_COMPILE);
 
@@ -87,7 +88,7 @@ void initScene(){
 
     glColor3f(1, 1, 0);
     glVertex3f(0,0,0);
-    glVertex3f(0,2.6,3.0);
+    glVertex3f(0,4,2.0);
 
 	glColor3f(1, 0, 0);
 	glVertex3f(0,0,0);
@@ -102,19 +103,24 @@ void initScene(){
 	glVertex3f(0,0,100);
 	glEnd();
 
-	glLineWidth(10);
+	//glLineWidth(10);
 	glColor3f(0, 1, 1);
-	glBegin(GL_LINE_STRIP);
-	glVertex3f(0,0,0);
-	for (int i=0; i<bones.size(); i++) {
-        if (i%2!=0) {
+	//glBegin(GL_LINE_STRIP);
+	//glVertex3f(0,0,0);
+
+    renderCylinder_convenient(0, 0, 0, bones[0].currPos[0], bones[0].currPos[1], bones[0].currPos[2], 0.04, 10);
+	for (int i=1; i<bones.size(); i++) {
+        if (i%2==0) {
             glColor3f(0, 1, 1);
         } else {
             glColor3f(1, 0, 1);
         }
-		glVertex3f(bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2]);
+
+        renderCylinder_convenient(bones[i-1].currPos[0], bones[i-1].currPos[1], bones[i-1].currPos[2], bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2], 0.04, 10);
+		//glVertex3f(bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2]);
+
 	}
-	glEnd();
+	//glEnd();
 	glEndList();
 
 	glClearColor(0.0, 0.0, 0.0, 0.0);

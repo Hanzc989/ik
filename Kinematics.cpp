@@ -4,6 +4,7 @@ Kinematics::Kinematics(float s, float e) {
 	epsilon = e;
 }
 
+
 Eigen::Vector3d Kinematics::solveFKTest(std::vector<Bone> & bones, int start, float dTheta, float dPhi) {
 	for (int i=start; i<bones.size(); i++) {
 		bones[i].nextTheta = bones[i].currTheta+dTheta;
@@ -74,8 +75,8 @@ Eigen::MatrixXd Kinematics::jacobian(std::vector<Bone> & bones, float step) {
 
 Eigen::MatrixXd Kinematics::pseudoInverse(Eigen::MatrixXd & jacobian) {
 	//return (jacobian.transpose()*jacobian).inverse()*jacobian.transpose();
-    std::cout << "j*j-t inverse" << std::endl;
-    std::cout << (jacobian*jacobian.transpose()) << std::endl;
+    //std::cout << "j*j-t inverse" << std::endl;
+    //std::cout << (jacobian*jacobian.transpose()) << std::endl;
     return jacobian.transpose()*(jacobian*jacobian.transpose()).inverse();
 }
 
@@ -86,15 +87,21 @@ void Kinematics::solveIK(std::vector<Bone> & bones, Eigen::Vector3d goalPos) {
 	while ((oldPos-goalPos).norm() > epsilon && currStep > 0.0001) {
 		//std::cout << "wah" << std::endl;
 		Eigen::MatrixXd j = jacobian(bones, currStep);
-        std::cout << j << std::endl;
+        //std::cout << j << std::endl;
 		Eigen::MatrixXd p = pseudoInverse(j);
         std::cout << p << std::endl;
+        //while (p.hasNaN()) {
+            //solveFK(bones, 0, 0.01, 0);
+            //Eigen::MatrixXd j = jacobian(bones, currStep);
+            //Eigen::MatrixXd p = pseudoInverse(j);
+        //}
+        if (p.hasNaN()) return;
         //std::cout << goalPos << std::endl;
         //std::cout << oldPos << std::endl;
 		Eigen::VectorXd angles = p*currStep*(goalPos-oldPos);
         //angles = -1*angles;
 		Eigen::Vector3d newPos;
-        std::cout << angles << std::endl;
+        //std::cout << angles << std::endl;
 		for (int i=0; i<angles.size(); i+=2) {
 			newPos = solveFK(bones, i/2, angles[i], angles[i+1]);
 		}
@@ -109,7 +116,7 @@ void Kinematics::solveIK(std::vector<Bone> & bones, Eigen::Vector3d goalPos) {
             //std::cout << "yo" << std::endl;
 			oldPos = newPos;
 		}
-        std::cout << "currStep: "<<currStep << std::endl;
-        std::cout <<"dist: " << (oldPos-goalPos).norm() << std::endl;
+        //std::cout << "currStep: "<<currStep << std::endl;
+        //std::cout <<"dist: " << (oldPos-goalPos).norm() << std::endl;
 	}
 }
