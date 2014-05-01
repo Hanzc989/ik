@@ -29,6 +29,21 @@ GLfloat lights[5][4]= {{0.9, 0.9, 0.9, 0.8}, {0.4, 0.0, 0.8, 0.8}, {0.0, 0.6, 0.
 std::vector<Bone> bones(7);
 Kinematics test(0.1,0.01);
 Eigen::Vector3d goal(2,0,0);
+typedef Eigen::Vector3d (* ParametricFunctions) (float t);
+
+Eigen::Vector3d heart(float t){return Eigen::Vector3d((16*pow(sin(t),3))/3, (13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t))/3, -3);}
+
+Eigen::Vector3d spiral(float t){return Eigen::Vector3d(2*cos(2*PI*t), 2*sin(2*PI*t), t);}
+
+Eigen::Vector3d figureEight(float t){return Eigen::Vector3d(2*cos(t), 2*sin(2*t), 1);}
+
+Eigen::Vector3d butterfly(float t){return Eigen::Vector3d(sin(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)),
+														  cos(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)), 1);}
+
+
+ParametricFunctions coolShapes[] = { spiral, heart, figureEight, butterfly
+					};
+int shape = 0; 
 //****************************************************
 // reshape viewport if the window is resized
 //****************************************************
@@ -43,6 +58,10 @@ void myReshape(int w, int h) {
 	glLoadIdentity();
 	gluLookAt(10, 10, 10, 0, 0, 0, 0, 0, 1);
 }
+
+
+
+
 
 
 //****************************************************
@@ -70,12 +89,6 @@ void initScene(){
         std::cout << bones[i].currTheta << ", " << bones[i].currPhi << std::endl;
     }
 
-     //std::cout<<test.solveFK(bones,1, PI/2, PI/2)<<std::endl<<std::endl;
-     
-     //std::cout<<test.solveFK(bones,0, -PI/2, -PI/2)<<std::endl<<std::endl;
-     //std::cout<<test.solveFK(bones,2, PI/3, 0)<<std::endl<<std::endl;
-     //std::cout<<test.solveFK(bones,2, -PI/3, 0)<<std::endl<<std::endl;
-     //std::cout<<test.solveFK(bones,1, 0, PI/2)<<std::endl<<std::endl;
      std::cout<<test.jacobian(bones, 0.1)<<std::endl;
     
 
@@ -101,7 +114,8 @@ void initScene(){
     glBegin(GL_LINE_STRIP);
     float t = 0.0f;
     while (t<16) {
-        glVertex3f(2*cos(2*PI*t), 2*sin(2*PI*t), t);
+    	Eigen::Vector3d temp = coolShapes[shape](t);
+    	glVertex3f(temp[0], temp[1], temp[2]);
         t += 0.01f;
     }
     glEnd();
@@ -114,7 +128,7 @@ void initScene(){
 void interpolateGoal(bool dir, Eigen::Vector3d & goal) {
     static float t = 0.0f;
     t += dir? 0.01f : -0.01f;
-    goal = Eigen::Vector3d(2*cos(2*PI*t), 2*sin(2*PI*t), t);
+	goal = coolShapes[shape](t);
 }
 
 void renderIK() {
@@ -162,6 +176,11 @@ void myDisplay() {
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
+	case 'n':
+		shape = (shape+1) % 4;
+		initScene();
+		glutPostRedisplay();
+		break;
     case 'u':
         interpolateGoal(1, goal);
         glutPostRedisplay();
