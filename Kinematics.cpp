@@ -89,7 +89,7 @@ void Kinematics::solveIK(std::vector<Bone> & bones, Eigen::Vector3d goalPos) {
 		Eigen::MatrixXd j = jacobian(bones, currStep);
         //std::cout << j << std::endl;
 		Eigen::MatrixXd p = pseudoInverse(j);
-        std::cout << p << std::endl;
+        //std::cout << p << std::endl;
         //while (p.hasNaN()) {
             //solveFK(bones, 0, 0.01, 0);
             //Eigen::MatrixXd j = jacobian(bones, currStep);
