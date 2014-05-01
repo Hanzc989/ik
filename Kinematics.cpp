@@ -59,6 +59,22 @@ Eigen::Vector3d Kinematics::solveFK(std::vector<Bone> & bones, int start, float 
 	return bones[bones.size()-1].currPos;
 }
 
+Eigen::Vector3d Kinematics::solveFKReset(std::vector<Bone> & bones, float theta, float phi) {
+	for (int i=0; i<bones.size(); i++) {
+		bones[i].currTheta = theta;
+		bones[i].currPhi = phi;
+		Eigen::Vector3d increment(bones[i].length*sin(bones[i].currTheta)*cos(bones[i].currPhi),
+						   bones[i].length*sin(bones[i].currTheta)*sin(bones[i].currPhi),
+						   bones[i].length*cos(bones[i].currTheta));
+		if (i==0) {
+			bones[i].currPos = increment;
+		} else {
+			bones[i].currPos = bones[i-1].currPos + increment;
+		}
+	}
+	return bones[bones.size()-1].currPos;
+}
+
 Eigen::MatrixXd Kinematics::jacobian(std::vector<Bone> & bones, float step) {
 	Eigen::MatrixXd jacobian(3, 2*bones.size());
 	Eigen::Vector3d newPos, currPos = bones[bones.size()-1].currPos;
@@ -81,7 +97,19 @@ Eigen::MatrixXd Kinematics::pseudoInverse(Eigen::MatrixXd & jacobian) {
 }
 
 void Kinematics::solveIK(std::vector<Bone> & bones, Eigen::Vector3d goalPos) {
-	float currStep = step;
+	float length = 0;
+    for (int i = 0; i < bones.size(); i++) {
+       length += bones[i].length; 
+    }
+
+    if (goalPos.norm() > length+epsilon) {
+        float theta = atan2(sqrt(pow(goalPos[0],2)+pow(goalPos[1],2)),goalPos[2]);
+        float phi = atan2(goalPos[1],goalPos[0]);
+        solveFKReset(bones, theta, phi);
+        return;
+    }
+    
+    float currStep = step;
 	Eigen::Vector3d oldPos = bones[bones.size()-1].currPos;
 
 	while ((oldPos-goalPos).norm() > epsilon && currStep > 0.0001) {
