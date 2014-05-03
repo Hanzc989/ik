@@ -28,7 +28,6 @@ GLuint object;
 GLfloat lights[5][4]= {{0.9, 0.9, 0.9, 0.8}, {0.4, 0.0, 0.8, 0.8}, {0.0, 0.6, 0.6, 0.8}, {0.5, 0.5, 0.1, 0.8}, {0.0, 0.0, 0.4, 0.8}};
 std::vector<Bone> bones(7);
 Kinematics test(0.1,0.01);
-Eigen::Vector3d goal(2,0,0);
 typedef Eigen::Vector3d (* ParametricFunctions) (float t);
 
 Eigen::Vector3d heart(float t){return Eigen::Vector3d((16*pow(sin(t),3))/3, (13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t))/3, -3);}
@@ -43,7 +42,9 @@ Eigen::Vector3d butterfly(float t){return Eigen::Vector3d(sin(t)*(exp(cos(t))-2*
 
 ParametricFunctions coolShapes[] = { spiral, heart, figureEight, butterfly
 					};
-int shape = 0; 
+int shape = 2; 
+
+Eigen::Vector3d goal=coolShapes[shape](0);
 //****************************************************
 // reshape viewport if the window is resized
 //****************************************************
