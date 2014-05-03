@@ -26,25 +26,26 @@ int currColor=0;
 bool shading=0, wireframe=1;
 GLuint object;
 GLfloat lights[5][4]= {{0.9, 0.9, 0.9, 0.8}, {0.4, 0.0, 0.8, 0.8}, {0.0, 0.6, 0.6, 0.8}, {0.5, 0.5, 0.1, 0.8}, {0.0, 0.0, 0.4, 0.8}};
-std::vector<Bone> bones(7);
+std::vector<std::vector<Bone> > appendages;
 Kinematics test(0.1,0.01);
 typedef Eigen::Vector3d (* ParametricFunctions) (float t);
 
 Eigen::Vector3d heart(float t){return Eigen::Vector3d((16*pow(sin(t),3))/3, (13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t))/3, -3);}
 
-Eigen::Vector3d spiral(float t){return Eigen::Vector3d(2*cos(2*PI*t), 2*sin(2*PI*t), t);}
+Eigen::Vector3d spiral(float t){return Eigen::Vector3d(0.5*t*cos(2*PI*t), 0.5*t*sin(2*PI*t), t);}
 
 Eigen::Vector3d figureEight(float t){return Eigen::Vector3d(2*cos(t), 2*sin(2*t), 1);}
 
 Eigen::Vector3d butterfly(float t){return Eigen::Vector3d(sin(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)),
 														  cos(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)), 1);}
 
+Eigen::Vector3d tentacle(float t){return Eigen::Vector3d(0, 0, 6*cos(0.5*PI*t)+6);}
+ParametricFunctions coolShapes[] = {spiral, heart, figureEight, butterfly, tentacle};
+int sizeShapes = 5;
+int shape = 0;
+float stepSize = 0;
+std::vector<Eigen::Vector3d> goals;
 
-ParametricFunctions coolShapes[] = { spiral, heart, figureEight, butterfly
-					};
-int shape = 2; 
-
-Eigen::Vector3d goal=coolShapes[shape](0);
 //****************************************************
 // reshape viewport if the window is resized
 //****************************************************
@@ -59,11 +60,6 @@ void myReshape(int w, int h) {
 	glLoadIdentity();
 	gluLookAt(10, 10, 10, 0, 0, 0, 0, 0, 1);
 }
-
-
-
-
-
 
 //****************************************************
 // Simple init function
@@ -82,16 +78,9 @@ void initScene(){
     glShadeModel(GL_FLAT);
 
 	object = glGenLists(1);
-
-
-    std::cout<<test.solveFK(bones,0, 0.001, 0)<<std::endl<<std::endl;
-
-    for (int i=0; i<bones.size();i++){
-        std::cout << bones[i].currTheta << ", " << bones[i].currPhi << std::endl;
+    for (int i = 0; i < appendages.size(); i++) {
+        test.solveFK(appendages[i],0, 0.001, 0);
     }
-
-     std::cout<<test.jacobian(bones, 0.1)<<std::endl;
-    
 
 	glNewList(object, GL_COMPILE);
 
@@ -121,74 +110,91 @@ void initScene(){
     }
     glEnd();
     
+    glPushMatrix();
+    glScalef(1.0f,1.0f,1.5f);
+    glutSolidSphere(1, 10, 10);
+    glPopMatrix();
+
     glEndList();
 
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 }
 
-void interpolateGoal(bool dir, Eigen::Vector3d & goal) {
+void interpolateGoal(std::vector<Eigen::Vector3d> & goals, int arm) {
     static float t = 0.0f;
-    t += dir? 0.01f : -0.01f;
-	goal = coolShapes[shape](t);
+    t += stepSize;
+    if (goals.size()>1) {
+	    goals[arm] = coolShapes[shape](t) + Eigen::Vector3d(cos((2*PI/goals.size())*arm)+0.05*((float) rand()/(float) RAND_MAX), sin((2*PI/goals.size())*arm), 0);
+    } else {
+        goals[arm] = coolShapes[shape](t);
+    }
 }
 
 void renderIK() {
     //Eigen::Vector3d goal = interpolateGoal();
-    test.solveIK(bones, goal);
-    glColor3f(0, 1, 1);
-
-    renderCylinder_convenient(0, 0, 0, bones[0].currPos[0], bones[0].currPos[1], bones[0].currPos[2], 0.04, 10);
-    glPushMatrix();
-    glTranslatef(bones[0].currPos[0], bones[0].currPos[1], bones[0].currPos[2]);
-    glutSolidSphere(0.1, 10, 10);
-    glPopMatrix();
-
-	for (int i=1; i<bones.size(); i++) {
-        if (i%2==0) {
-            glColor3f(0, 1, 1);
-        } else {
-            glColor3f(1, 0, 1);
-        }
-        renderCylinder_convenient(bones[i-1].currPos[0], bones[i-1].currPos[1], bones[i-1].currPos[2], bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2], 0.04, 5);
-        
+    for (int i = 0; i < appendages.size(); i++) {
+        test.solveIK(appendages[i], goals[i]);
         glPushMatrix();
-        glTranslatef(bones[i].currPos[0], bones[i].currPos[1], bones[i].currPos[2]);
+        glTranslatef(cos((2*PI/goals.size())*i), sin((2*PI/goals.size())*i), 0);
+
+        glColor3f(0, 1, 1);
+        renderCylinder_convenient(0, 0, 0, appendages[i][0].currPos[0], appendages[i][0].currPos[1], appendages[i][0].currPos[2], 0.04, 10);
+
+        glPushMatrix();
+        glTranslatef(appendages[i][0].currPos[0], appendages[i][0].currPos[1], appendages[i][0].currPos[2]);
         glutSolidSphere(0.1, 10, 10);
         glPopMatrix();
-	}
-    glBegin(GL_LINES);
-    glColor3f(1, 1, 0);
-    glVertex3f(0,0,0);
-    glVertex3f(goal[0],goal[1],goal[2]);
-    glEnd();
+
+        for (int j=1; j<appendages[i].size(); j++) {
+            if (j%2==0) {
+                glColor3f(0, 1, 1);
+            } else {
+                glColor3f(1, 0, 1);
+            }
+            renderCylinder_convenient(appendages[i][j-1].currPos[0], appendages[i][j-1].currPos[1], appendages[i][j-1].currPos[2], appendages[i][j].currPos[0], appendages[i][j].currPos[1], appendages[i][j].currPos[2], 0.04, 5);
+            
+            glPushMatrix();
+            glTranslatef(appendages[i][j].currPos[0], appendages[i][j].currPos[1], appendages[i][j].currPos[2]);
+            glutSolidSphere(0.1, 10, 10);
+            glPopMatrix();
+        }
+        glBegin(GL_LINES);
+        glColor3f(1, 1, 0);
+        glVertex3f(0,0,0);
+        glVertex3f(goals[i][0],goals[i][1],goals[i][2]);
+        glEnd();
+        glPopMatrix();
+    }
 }
 
 //****************************************************
 // function that does the actual drawing of stuff
 //***************************************************
 void myDisplay() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glCallList(object);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); glCallList(object);
     renderIK();
 	glFlush();
 	glutSwapBuffers();  
 }
-
+void myIdle() {
+    for (int i = 0; i<appendages.size(); i++) {
+        interpolateGoal(goals, i);
+        glutPostRedisplay();
+    }
+}
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
 	case 'n':
-		shape = (shape+1) % 4;
+		shape = (shape+1) % sizeShapes;
 		initScene();
 		glutPostRedisplay();
 		break;
     case 'u':
-        interpolateGoal(1, goal);
-        glutPostRedisplay();
+        stepSize += 0.005f;
         break;
     case 'i':
-        interpolateGoal(0, goal);
-        glutPostRedisplay();
+        stepSize -= 0.005f;
         break;
 	case 's':
 		if (shading) { 
@@ -255,14 +261,15 @@ void arrows(int key, int x, int y)
 // the usual stuff, nothing exciting here
 //****************************************************
 int main(int argc, char *argv[]) {
-	bones[0]=Bone(2.0f);
-    bones[1]=Bone(1.3f);
-    bones[2]=Bone(0.5f);
-    bones[3]=Bone(1.0f);
-    bones[4]=Bone(1.0f);
-    bones[5]=Bone(0.4f);
-    bones[6]=Bone(0.8f);
-	//This initializes glut
+    for (int i = 0; i<8; i++) {
+        std::vector<Bone> arm;
+        for (int j=0; j<10; j++) {
+            arm.push_back(Bone(0.3f));
+        }
+        appendages.push_back(arm);
+        goals.push_back(coolShapes[shape](0));
+    }
+    //This initializes glut
 	glutInit(&argc, argv);
 
 	//This tells glut to use a double-buffered window with red, green, and blue channels 
@@ -280,6 +287,7 @@ int main(int argc, char *argv[]) {
 	initScene();							// quick function to set up scene
 
 	glutDisplayFunc(myDisplay);				// function to run when its time to draw something
+    glutIdleFunc(myIdle);
 	glutReshapeFunc(myReshape);				// function to run when the window gets resized
 	glutKeyboardFunc(keyboard);
 	glutSpecialFunc(arrows);
