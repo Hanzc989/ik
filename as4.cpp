@@ -23,7 +23,7 @@ public:
 //****************************************************
 Viewport viewport;
 int currColor=0;
-bool shading=0, wireframe=1;
+bool shading=0, wireframe=1, octopus=0;
 GLuint object;
 GLfloat lights[5][4]= {{0.9, 0.9, 0.9, 0.8}, {0.4, 0.0, 0.8, 0.8}, {0.0, 0.6, 0.6, 0.8}, {0.5, 0.5, 0.1, 0.8}, {0.0, 0.0, 0.4, 0.8}};
 std::vector<std::vector<Bone> > appendages;
@@ -39,7 +39,7 @@ Eigen::Vector3d figureEight(float t){return Eigen::Vector3d(2*cos(t), 2*sin(2*t)
 Eigen::Vector3d butterfly(float t){return Eigen::Vector3d(sin(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)),
 														  cos(t)*(exp(cos(t))-2*cos(4*t)-pow(sin(t/12),5)), 1);}
 
-Eigen::Vector3d tentacle(float t){return Eigen::Vector3d(0, 0, 6*cos(0.5*PI*t)+6);}
+Eigen::Vector3d tentacle(float t){return Eigen::Vector3d(0.001, 0.001, 6*cos(0.5*PI*t)+6);}
 ParametricFunctions coolShapes[] = {spiral, heart, figureEight, butterfly, tentacle};
 int sizeShapes = 5;
 int shape = 0;
@@ -109,11 +109,12 @@ void initScene(){
         t += 0.01f;
     }
     glEnd();
-    
-    glPushMatrix();
-    glScalef(1.0f,1.0f,1.5f);
-    glutSolidSphere(1, 10, 10);
-    glPopMatrix();
+    if (octopus) {    
+        glPushMatrix();
+        glScalef(1.0f,1.0f,1.5f);
+        glutSolidSphere(1, 10, 10);
+        glPopMatrix();
+    }
 
     glEndList();
 
@@ -123,7 +124,7 @@ void initScene(){
 void interpolateGoal(std::vector<Eigen::Vector3d> & goals, int arm) {
     static float t = 0.0f;
     t += stepSize;
-    if (goals.size()>1) {
+    if (octopus) {
 	    goals[arm] = coolShapes[shape](t) + Eigen::Vector3d(cos((2*PI/goals.size())*arm)+0.05*((float) rand()/(float) RAND_MAX), sin((2*PI/goals.size())*arm), 0);
     } else {
         goals[arm] = coolShapes[shape](t);
@@ -134,8 +135,10 @@ void renderIK() {
     //Eigen::Vector3d goal = interpolateGoal();
     for (int i = 0; i < appendages.size(); i++) {
         test.solveIK(appendages[i], goals[i]);
-        glPushMatrix();
-        glTranslatef(cos((2*PI/goals.size())*i), sin((2*PI/goals.size())*i), 0);
+        if (octopus) {
+            glPushMatrix();
+            glTranslatef(cos((2*PI/goals.size())*i), sin((2*PI/goals.size())*i), 0);
+        }
 
         glColor3f(0, 1, 1);
         renderCylinder_convenient(0, 0, 0, appendages[i][0].currPos[0], appendages[i][0].currPos[1], appendages[i][0].currPos[2], 0.04, 10);
@@ -163,7 +166,8 @@ void renderIK() {
         glVertex3f(0,0,0);
         glVertex3f(goals[i][0],goals[i][1],goals[i][2]);
         glEnd();
-        glPopMatrix();
+
+        if (octopus) glPopMatrix();
     }
 }
 
@@ -261,14 +265,33 @@ void arrows(int key, int x, int y)
 // the usual stuff, nothing exciting here
 //****************************************************
 int main(int argc, char *argv[]) {
-    for (int i = 0; i<8; i++) {
-        std::vector<Bone> arm;
-        for (int j=0; j<10; j++) {
-            arm.push_back(Bone(0.3f));
-        }
-        appendages.push_back(arm);
-        goals.push_back(coolShapes[shape](0));
+    if (argc > 1) {
+        octopus = 1;
     }
+    if (octopus) {
+        for (int i = 0; i<8; i++) {
+            std::vector<Bone> arm;
+            for (int j=0; j<10; j++) {
+                arm.push_back(Bone(0.3f));
+            }
+            appendages.push_back(arm);
+            goals.push_back(coolShapes[shape](0));
+        }
+    } else {
+        for (int i = 0; i<1; i++) {
+            std::vector<Bone> arm;
+            arm.push_back(Bone(2.0f));
+            arm.push_back(Bone(1.0f));
+            arm.push_back(Bone(1.3f));
+            arm.push_back(Bone(0.5f));
+            arm.push_back(Bone(0.8f));
+            arm.push_back(Bone(0.3f));
+            arm.push_back(Bone(1.0f));
+            appendages.push_back(arm);
+            goals.push_back(coolShapes[shape](0));
+        }
+    }
+
     //This initializes glut
 	glutInit(&argc, argv);
 
